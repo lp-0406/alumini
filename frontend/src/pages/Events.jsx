@@ -1,67 +1,170 @@
 import React, { useState, useMemo } from 'react';
 
-// Dummy events data
+// Enhanced dummy events data with all required fields
 const dummyEvents = [
   {
     id: 1,
     title: "Tech Club Hackathon",
     date: "2025-10-15",
+    time: "09:00",
     category: "Club",
-    description: "24-hour hackathon organized by Tech Club."
+    description: "24-hour hackathon organized by Tech Club.",
+    organizer: "Student",
+    status: "Upcoming"
   },
   {
     id: 2,
     title: "Cultural Fest 2025",
     date: "2025-11-02",
+    time: "10:00",
     category: "General",
-    description: "Annual cultural festival with music, dance, and drama."
+    description: "Annual cultural festival with music, dance, and drama.",
+    organizer: "Alumni",
+    status: "Upcoming"
   },
   {
     id: 3,
     title: "Robotics Workshop",
     date: "2025-09-30",
+    time: "14:00",
     category: "Club",
-    description: "Hands-on robotics workshop for beginners."
+    description: "Hands-on robotics workshop for beginners.",
+    organizer: "Student",
+    status: "Upcoming"
   },
   {
     id: 4,
     title: "Alumni Meet 2025",
     date: "2025-12-20",
+    time: "18:00",
     category: "General",
-    description: "Reunion of alumni with networking sessions."
+    description: "Reunion of alumni with networking sessions.",
+    organizer: "Alumni",
+    status: "Upcoming"
   },
   {
     id: 5,
     title: "Photography Contest",
     date: "2025-10-25",
+    time: "11:00",
     category: "Club",
-    description: "Photography competition organized by the Media Club."
+    description: "Photography competition organized by the Media Club.",
+    organizer: "Student",
+    status: "Upcoming"
   },
   {
     id: 6,
     title: "Career Fair 2025",
     date: "2025-11-15",
+    time: "09:30",
     category: "General",
-    description: "Companies coming for recruitment and internships."
+    description: "Companies coming for recruitment and internships.",
+    organizer: "Alumni",
+    status: "Upcoming"
+  },
+  {
+    id: 7,
+    title: "Science Exhibition",
+    date: "2024-12-15",
+    time: "10:00",
+    category: "Club",
+    description: "Annual science exhibition showcasing student projects.",
+    organizer: "Student",
+    status: "Completed"
+  },
+  {
+    id: 8,
+    title: "New Year Celebration",
+    date: "2024-12-31",
+    time: "20:00",
+    category: "General",
+    description: "New Year celebration with cultural performances.",
+    organizer: "Alumni",
+    status: "Completed"
   }
 ];
 
 function Events() {
+  const [events, setEvents] = useState(dummyEvents);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedStatus, setSelectedStatus] = useState('All');
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    date: '',
+    time: '',
+    category: 'Club',
+    description: '',
+    organizer: 'Student'
+  });
+
+  // Update event status based on current date
+  const updateEventStatus = (event) => {
+    const eventDate = new Date(event.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    eventDate.setHours(0, 0, 0, 0);
+    
+    return eventDate < today ? 'Completed' : 'Upcoming';
+  };
 
   // Filter and search events
   const filteredEvents = useMemo(() => {
-    return dummyEvents.filter(event => {
+    return events.filter(event => {
       const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            event.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = selectedCategory === 'All' || event.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+      const matchesStatus = selectedStatus === 'All' || event.status === selectedStatus;
+      return matchesSearch && matchesCategory && matchesStatus;
     });
-  }, [searchTerm, selectedCategory]);
+  }, [events, searchTerm, selectedCategory, selectedStatus]);
+
+  // Calendar helper functions
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    const days = [];
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+    
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(new Date(year, month, day));
+    }
+    
+    return days;
+  };
+
+  const getEventsForDate = (date) => {
+    if (!date) return [];
+    const dateString = date.toISOString().split('T')[0];
+    return events.filter(event => event.date === dateString);
+  };
+
+  const isToday = (date) => {
+    if (!date) return false;
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+
+  const isCurrentEvent = (event) => {
+    const eventDate = new Date(event.date);
+    const today = new Date();
+    return eventDate.toDateString() === today.toDateString();
+  };
 
   const handleViewMore = (eventId) => {
-    // Placeholder for future expansion
     console.log(`View more details for event ${eventId}`);
     alert(`View more details for event ${eventId} - Feature coming soon!`);
   };
@@ -74,6 +177,65 @@ function Events() {
       day: 'numeric'
     });
   };
+
+  const formatTime = (timeString) => {
+    return timeString || 'TBD';
+  };
+
+  const handleEventFormChange = (e) => {
+    const { name, value } = e.target;
+    setEventForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleEventSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!eventForm.title || !eventForm.date || !eventForm.time) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    const newEvent = {
+      id: events.length + 1,
+      title: eventForm.title,
+      date: eventForm.date,
+      time: eventForm.time,
+      category: eventForm.category,
+      description: eventForm.description,
+      organizer: eventForm.organizer,
+      status: updateEventStatus({ date: eventForm.date })
+    };
+
+    setEvents(prev => [...prev, newEvent]);
+    setEventForm({
+      title: '',
+      date: '',
+      time: '',
+      category: 'Club',
+      description: '',
+      organizer: 'Student'
+    });
+    setShowEventForm(false);
+    alert('Event created successfully!');
+  };
+
+  const navigateMonth = (direction) => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() + direction);
+      return newDate;
+    });
+  };
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
     <div style={{ 
